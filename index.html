@@ -3,136 +3,185 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
 
-  <title>PDF Viewer</title>
+  <title>Govindam Menu</title>
 
   <style>
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
 
-    html,
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
       font-family: Arial, sans-serif;
-      background: #f1f3f5;
+      background: #e8e8e8;
     }
 
-    .pdf-container {
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .pdf-toolbar {
-      min-height: 54px;
-      padding: 8px 16px;
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      background: #202124;
-      color: white;
-    }
-
-    .pdf-toolbar h1 {
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    .download-btn {
-      display: inline-block;
-      padding: 9px 14px;
-      border-radius: 5px;
+      gap: 10px;
+      padding: 12px 16px;
       background: #ffffff;
-      color: #202124;
+      box-shadow: 0 2px 6px #00000018;
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      font-size: 18px;
+      color: #222;
+    }
+
+    .toolbar a {
+      padding: 10px 14px;
+      border-radius: 6px;
+      background: #8b4513;
+      color: white;
       text-decoration: none;
       font-size: 14px;
       white-space: nowrap;
     }
 
-    .download-btn:hover {
-      background: #e5e5e5;
-    }
-
-    .pdf-viewer {
-      flex: 1;
-      min-height: 0;
+    #menu {
       width: 100%;
-      position: relative;
-      background: #e5e7eb;
+      padding: 12px;
     }
 
-    .pdf-viewer iframe {
+    .page {
       display: block;
       width: 100%;
-      height: 100%;
-      border: none;
+      height: auto;
+      margin: 0 auto 12px;
+      background: white;
+      box-shadow: 0 1px 5px #00000020;
     }
 
-    .fallback {
-      padding: 24px;
+    #status {
+      padding: 30px 16px;
       text-align: center;
       color: #333;
     }
 
-    .fallback a {
-      color: #075fcc;
+    .hidden {
+      display: none !important;
     }
 
-    @media (max-width: 600px) {
-      .pdf-toolbar {
-        min-height: 48px;
-        padding: 8px 10px;
+    @media (max-width: 480px) {
+      .toolbar {
+        padding: 10px;
       }
 
-      .pdf-toolbar h1 {
-        font-size: 14px;
+      .toolbar h1 {
+        font-size: 16px;
       }
 
-      .download-btn {
-        padding: 8px 10px;
-        font-size: 12px;
+      .toolbar a {
+        padding: 9px 10px;
+        font-size: 13px;
+      }
+
+      #menu {
+        padding: 4px;
+      }
+
+      .page {
+        margin-bottom: 5px;
       }
     }
   </style>
 </head>
 
 <body>
-  <main class="pdf-container">
+  <header class="toolbar">
+    <h1>Govindam Menu</h1>
+    <a href="./Govindam_menu.pdf" download>
+      Download PDF
+    </a>
+  </header>
 
-    <header class="pdf-toolbar">
-      <h1>PDF Viewer</h1>
+  <div id="status">Loading menu...</div>
+  <main id="menu"></main>
 
-      <a
-        class="download-btn"
-        href="./Govindam_menu.pdf"
-        download
-      >
-        Download PDF
-      </a>
-    </header>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    <section class="pdf-viewer">
-      <iframe
-        src="./Govindam_menu.pdf#toolbar=1&navpanes=0&view=FitH"
-        title="PDF document viewer"
-        loading="eager"
-      >
-        <div class="fallback">
-          Your browser cannot display this PDF.
-          <a href="./Govindam_menu.pdf">Open or download the PDF</a>.
-        </div>
-      </iframe>
-    </section>
+  <script>
+    const pdfUrl = "./Govindam_menu.pdf";
 
-  </main>
+    const menu = document.getElementById("menu");
+    const status = document.getElementById("status");
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    async function loadMenu() {
+      try {
+        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+
+        status.classList.add("hidden");
+
+        for (let pageNumber = 1;
+             pageNumber <= pdf.numPages;
+             pageNumber++) {
+
+          const page = await pdf.getPage(pageNumber);
+          const baseViewport = page.getViewport({ scale: 1 });
+
+          const availableWidth = menu.clientWidth;
+          const scale = availableWidth / baseViewport.width;
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement("canvas");
+          canvas.className = "page";
+
+          const context = canvas.getContext("2d");
+
+          const pixelRatio = Math.min(
+            window.devicePixelRatio || 1, 2
+          );
+
+          canvas.width = Math.floor(
+            viewport.width * pixelRatio
+          );
+
+          canvas.height = Math.floor(
+            viewport.height * pixelRatio
+          );
+
+          canvas.style.width = viewport.width + "px";
+          canvas.style.height = viewport.height + "px";
+
+          menu.appendChild(canvas);
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport,
+            transform: [pixelRatio, 0, 0, pixelRatio, 0, 0]
+          }).promise;
+        }
+      } catch (error) {
+        console.error("PDF loading error:", error);
+
+        status.classList.remove("hidden");
+        status.textContent =
+          "Unable to load the menu. Please check your internet connection or try again.";
+
+        const link = document.createElement("a");
+        link.href = pdfUrl;
+        link.textContent = " Open PDF menu";
+        status.appendChild(link);
+      }
+    }
+
+    loadMenu();
+  </script>
 </body>
 </html>
